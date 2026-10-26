@@ -1,0 +1,23 @@
+name: Project checks
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Run collector and dashboard tests
+        run: python -m unittest discover -s tests -v
+      - name: Validate startup script
+        run: sh -n start.sh
+      - name: Validate Compose with temporary credentials
+        run: |
+          export GRAFANA_ADMIN_USER="$(python -c 'import secrets; print(secrets.token_hex(8))')"
+          export GRAFANA_ADMIN_PASSWORD="$(python -c 'import secrets; print(secrets.token_hex(24))')"
+          docker compose config --quiet
